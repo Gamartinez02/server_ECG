@@ -28,29 +28,59 @@ app.get("/", (req, res) => {
 <script>
   const canvas = document.getElementById("scope");
   const ctx = canvas.getContext("2d");
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  
+  // Ajustar canvas al tamaño de la ventana
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.onresize = resize;
+  resize();
 
   const bufferSize = 2000; 
-  let dataPoints = new Float32Array(bufferSize); 
+  let dataPoints = new Float32Array(bufferSize).fill(2048 * (3.3/4095)); // Iniciar a la mitad
   let pointer = 0;
 
+  // Forzar WSS usando la URL absoluta de Render
   const socket = new WebSocket("wss://server-ecg.onrender.com");
   socket.binaryType = "arraybuffer";
-  
-  socket.onopen = () => console.log("WebSocket Conectado al Servidor");
-  socket.onerror = (err) => console.error("Error en WebSocket:", err);
-  
+
+  socket.onopen = () => console.log("✅ Conexión establecida");
   socket.onmessage = (event) => {
     const rawData = new Uint16Array(event.data);
-    // LOG DE PRUEBA: Si ves esto en la consola (F12), los datos están llegando
-    if (pointer % 100 === 0) console.log("Datos recibidos:", rawData[0]); 
-
     for(let i=0; i < rawData.length; i++) {
-        dataPoints[pointer] = rawData[i] * (3.3 / 4095);
-        pointer = (pointer + 1) % bufferSize;
+      dataPoints[pointer] = rawData[i] * (3.3 / 4095);
+      pointer = (pointer + 1) % bufferSize;
     }
-};
+  };
+
+  function draw() {
+    // Fondo con persistencia leve
+    ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.strokeStyle = "#0f0";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    
+    for(let i=0; i < bufferSize; i++) {
+      let x = i * (canvas.width / bufferSize);
+      let idx = (pointer + i) % bufferSize;
+      
+      // ESCALA: Si la señal es muy pequeña, multiplica por un factor (ej. 1.5)
+      // Restamos de canvas.height porque el eje Y en canvas empieza arriba
+      let valNormalizado = dataPoints[idx] / 3.3; 
+      let y = canvas.height - (valNormalizado * canvas.height);
+      
+      if(i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    requestAnimationFrame(draw);
+  }
+  draw();
+</script>
+
 
   function draw() {
     ctx.fillStyle = "rgba(0, 0, 0, 0.1)"; 
