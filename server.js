@@ -35,7 +35,8 @@ app.get("/", (req, res) => {
   let dataPoints = new Float32Array(bufferSize); 
   let pointer = 0;
 
-  const socket = new WebSocket("wss://" + location.host);
+  const socket = new WebSocket("wss://server-ecg.onrender.com");
+  socket.binaryType = "arraybuffer";
   socket.binaryType = "arraybuffer";
 
   socket.onmessage = (event) => {
