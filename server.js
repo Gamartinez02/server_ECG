@@ -37,15 +37,20 @@ app.get("/", (req, res) => {
 
   const socket = new WebSocket("wss://server-ecg.onrender.com");
   socket.binaryType = "arraybuffer";
-  socket.binaryType = "arraybuffer";
-
+  
+  socket.onopen = () => console.log("WebSocket Conectado al Servidor");
+  socket.onerror = (err) => console.error("Error en WebSocket:", err);
+  
   socket.onmessage = (event) => {
     const rawData = new Uint16Array(event.data);
+    // LOG DE PRUEBA: Si ves esto en la consola (F12), los datos están llegando
+    if (pointer % 100 === 0) console.log("Datos recibidos:", rawData[0]); 
+
     for(let i=0; i < rawData.length; i++) {
-      dataPoints[pointer] = rawData[i] * (3.3 / 4095);
-      pointer = (pointer + 1) % bufferSize; // Implementación de buffer circular para fluidez
+        dataPoints[pointer] = rawData[i] * (3.3 / 4095);
+        pointer = (pointer + 1) % bufferSize;
     }
-  };
+};
 
   function draw() {
     ctx.fillStyle = "rgba(0, 0, 0, 0.1)"; 
